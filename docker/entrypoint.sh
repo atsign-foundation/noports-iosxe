@@ -10,8 +10,16 @@
 #     run-opts 2 "-e DEVICE_ATSIGN=@mydevice -e MANAGER_ATSIGN=@manager"
 #     run-opts 3 "-e DEVICE_NAME=cat9k-1"
 #
-# Required:  DEVICE_ATSIGN  MANAGER_ATSIGN  DEVICE_NAME
-# Optional:  ROOT_SERVER    (e.g. proxy:proxy0001.atsign.org:443)
+# Required:  DEVICE_ATSIGN  DEVICE_NAME
+#            plus at least one of MANAGER_ATSIGN / POLICY_ATSIGN
+# Optional:  POLICY_ATSIGN  (atSign of a NoPorts Policy Service that decides
+#                            access requests centrally — the right choice
+#                            for large fleets; if both are set, atSigns in
+#                            MANAGER_ATSIGN bypass the policy check)
+#            DEVICE_GROUP   (device group name, sent to the policy service
+#                            with each request so rules can target groups,
+#                            e.g. access-switches)
+#            ROOT_SERVER    (e.g. proxy:proxy0001.atsign.org:443)
 #            PERMIT_OPEN    (comma-separated host:port list the clients may
 #                            request, e.g. 172.19.0.1:22,172.19.0.1:57400)
 #            SSHPUBLICKEY   (true/false: accept ssh public keys from clients)
@@ -24,11 +32,14 @@ KEYS_DIR="${DATA_DIR}/keys"
 log() { echo "noports: $*"; }
 
 MISSING=""
-for VAR in DEVICE_ATSIGN MANAGER_ATSIGN DEVICE_NAME; do
+for VAR in DEVICE_ATSIGN DEVICE_NAME; do
     if [ -z "${!VAR:-}" ]; then
         MISSING="${MISSING} ${VAR}"
     fi
 done
+if [ -z "${MANAGER_ATSIGN:-}" ] && [ -z "${POLICY_ATSIGN:-}" ]; then
+    MISSING="${MISSING} MANAGER_ATSIGN-or-POLICY_ATSIGN"
+fi
 if [ -n "$MISSING" ]; then
     log "ERROR: missing required environment variable(s):${MISSING}" >&2
     log "Set them with docker run-opts in the app-hosting config, e.g.:" >&2
@@ -74,9 +85,17 @@ fi
 ARGS=(
     --key-file "$KEY_FILE"
     --atsign "$DEVICE_ATSIGN"
-    --managers "$MANAGER_ATSIGN"
     --device "$DEVICE_NAME"
 )
+if [ -n "${MANAGER_ATSIGN:-}" ]; then
+    ARGS+=(--managers "$MANAGER_ATSIGN")
+fi
+if [ -n "${POLICY_ATSIGN:-}" ]; then
+    ARGS+=(--policy-manager "$POLICY_ATSIGN")
+fi
+if [ -n "${DEVICE_GROUP:-}" ]; then
+    ARGS+=(--device-group "$DEVICE_GROUP")
+fi
 if [ -n "${ROOT_SERVER:-}" ]; then
     ARGS+=(--root-server "$ROOT_SERVER")
 fi
@@ -91,5 +110,5 @@ if [ -n "${EXTRA_ARGS:-}" ]; then
     ARGS+=(${EXTRA_ARGS})
 fi
 
-log "starting sshnpd for ${DEVICE_ATSIGN} (device ${DEVICE_NAME}, managers ${MANAGER_ATSIGN})"
+log "starting sshnpd for ${DEVICE_ATSIGN} (device ${DEVICE_NAME}, managers ${MANAGER_ATSIGN:-<none>}, policy ${POLICY_ATSIGN:-<none>})"
 exec /usr/local/bin/sshnpd "${ARGS[@]}"

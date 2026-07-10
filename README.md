@@ -216,6 +216,36 @@ path is a separate outbound connection from the switch to the relay chosen
 by the client (`-r`), so a 443-only egress policy also needs a relay
 reachable on 443.
 
+## Fleet-scale access control: policy atSigns
+
+Listing manager atSigns per switch works for a handful of devices, but at
+fleet scale it means touching every device's app-hosting config to grant
+or revoke an operator's access. A **policy atSign** centralizes that
+decision: the daemon delegates each incoming request to a
+[NoPorts Policy Service](https://docs.noports.com) running as that atSign,
+which answers allow/deny based on centrally-managed rules.
+
+```text
+app-hosting appid noports
+ app-resource docker
+  run-opts 2 "-e DEVICE_ATSIGN=@mydevice -e POLICY_ATSIGN=@policy_np -e DEVICE_NAME=cat9k-1 -e DEVICE_GROUP=access-switches"
+```
+
+At least one of `MANAGER_ATSIGN` / `POLICY_ATSIGN` must be set:
+
+- **`POLICY_ATSIGN` only** — every request is decided by the policy
+  service; the switch config never changes as staff or entitlements
+  change. NoPorts' `permit-open` default also shifts from
+  `localhost:22,localhost:3389` to `*:*`, deferring port restrictions to
+  policy.
+- **both** — atSigns in `MANAGER_ATSIGN` get direct access (policy is not
+  consulted for them); everyone else is checked against the policy
+  service. Useful as a break-glass list alongside central control.
+
+`DEVICE_GROUP` is sent to the policy service with each request, so rules
+can target groups (e.g. "campus NOC may reach `access-switches` on port
+22") instead of individual devices.
+
 ## Development
 
 Nothing but Docker needed:
