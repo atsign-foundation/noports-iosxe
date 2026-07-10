@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions: # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+  release:
+    permissions:
+      contents: write # create the GitHub release and upload the tarball
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Fetch pinned sshnpd release binaries
+        run: ./scripts/fetch-sshnpd.sh
+      - name: Build image and export docker-save tarball
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          docker build --platform linux/amd64 -f docker/Dockerfile \
+            -t "noports-iosxe:${VERSION}" .
+          mkdir -p build
+          docker save "noports-iosxe:${VERSION}" -o build/noports-iosxe.tar
+          ls -lh build/noports-iosxe.tar
+      - name: Create release (or attach tarball to a UI-created one)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # Release was created in the GitHub UI: respect its
+            # pre-release/latest flags as chosen there; just attach the tar.
+            gh release upload "$GITHUB_REF_NAME" build/noports-iosxe.tar --clobber
+          else
+            # Bare tag push: create the release here. Semver pre-release
+            # tags (e.g. v0.2.0-rc1) become pre-releases; plain tags become
+            # the latest release.
+            case "$GITHUB_REF_NAME" in
+              *-*) FLAG="--prerelease" ;;
+              *)   FLAG="--latest" ;;
+            esac
+            gh release create "$GITHUB_REF_NAME" build/noports-iosxe.tar \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes \
+              --notes "Packages sshnpd $(cat SSHNPD_VERSION) as a Cisco IOS-XE app-hosting (IOx) docker-save tarball." \
+              "$FLAG"
+          fi
