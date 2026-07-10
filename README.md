@@ -228,7 +228,7 @@ which answers allow/deny based on centrally-managed rules.
 ```text
 app-hosting appid noports
  app-resource docker
-  run-opts 2 "-e DEVICE_ATSIGN=@mydevice -e POLICY_ATSIGN=@policy_np -e DEVICE_NAME=cat9k-1"
+  run-opts 2 "-e DEVICE_ATSIGN=@mydevice -e POLICY_ATSIGN=@policy_np -e DEVICE_NAME=cat9k-1 -e DEVICE_GROUP=access-switches"
 ```
 
 At least one of `MANAGER_ATSIGN` / `POLICY_ATSIGN` must be set:
@@ -241,6 +241,10 @@ At least one of `MANAGER_ATSIGN` / `POLICY_ATSIGN` must be set:
 - **both** — atSigns in `MANAGER_ATSIGN` get direct access (policy is not
   consulted for them); everyone else is checked against the policy
   service. Useful as a break-glass list alongside central control.
+
+`DEVICE_GROUP` is sent to the policy service with each request, so rules
+can target groups (e.g. "campus NOC may reach `access-switches` on port
+22") instead of individual devices.
 
 ## Development
 

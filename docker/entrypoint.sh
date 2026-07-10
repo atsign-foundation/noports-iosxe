@@ -16,6 +16,9 @@
 #                            access requests centrally — the right choice
 #                            for large fleets; if both are set, atSigns in
 #                            MANAGER_ATSIGN bypass the policy check)
+#            DEVICE_GROUP   (device group name, sent to the policy service
+#                            with each request so rules can target groups,
+#                            e.g. access-switches)
 #            ROOT_SERVER    (e.g. proxy:proxy0001.atsign.org:443)
 #            PERMIT_OPEN    (comma-separated host:port list the clients may
 #                            request, e.g. 172.19.0.1:22,172.19.0.1:57400)
@@ -89,6 +92,9 @@ if [ -n "${MANAGER_ATSIGN:-}" ]; then
 fi
 if [ -n "${POLICY_ATSIGN:-}" ]; then
     ARGS+=(--policy-manager "$POLICY_ATSIGN")
+fi
+if [ -n "${DEVICE_GROUP:-}" ]; then
+    ARGS+=(--device-group "$DEVICE_GROUP")
 fi
 if [ -n "${ROOT_SERVER:-}" ]; then
     ARGS+=(--root-server "$ROOT_SERVER")
