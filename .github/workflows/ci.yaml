@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [trunk]
+  pull_request:
+    branches: [trunk]
+  workflow_dispatch:
+
+permissions: # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: shellcheck
+        run: shellcheck docker/*.sh scripts/*.sh
+      - name: hadolint
+        run: docker run --rm -i hadolint/hadolint < docker/Dockerfile
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Fetch pinned sshnpd release binaries
+        run: ./scripts/fetch-sshnpd.sh
+      - name: Build image (linux/amd64)
+        run: |
+          docker build --platform linux/amd64 -f docker/Dockerfile \
+            -t noports-iosxe:0.0.0-ci${{ github.run_number }} .
+      - name: Export docker-save tarball for IOx
+        run: |
+          mkdir -p build
+          docker save noports-iosxe:0.0.0-ci${{ github.run_number }} \
+            -o build/noports-iosxe.tar
+          ls -lh build/noports-iosxe.tar
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: noports-iosxe-tar
+          path: build/noports-iosxe.tar
+          if-no-files-found: error
+
+  # No free IOS-XE image exists, so CI cannot exercise the IOx layer itself
+  # (QUICKSTART.md documents the manual on-device test plan). This smoke job
+  # runs the exact image the switch would: entrypoint env validation, the
+  # awaiting-onboarding wait state, and glibc compatibility of the packaged
+  # binaries.
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          name: noports-iosxe-tar
+          path: build
+      - name: Load image
+        run: docker load -i build/noports-iosxe.tar
+      - name: Container smoke test
+        run: ./scripts/smoke-test.sh noports-iosxe:0.0.0-ci${{ github.run_number }}

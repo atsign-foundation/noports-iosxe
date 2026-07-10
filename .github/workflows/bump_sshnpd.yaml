@@ -1,0 +1,54 @@
+name: Bump pinned sshnpd version
+
+# Watches the NoPorts repo for new releases and opens a PR updating
+# SSHNPD_VERSION so this package tracks upstream automatically.
+
+on:
+  schedule:
+    - cron: "23 6 * * 1" # weekly, Monday 06:23 UTC
+  workflow_dispatch:
+
+permissions: # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+  bump:
+    permissions:
+      contents: write # push the bump branch
+      pull-requests: write # open the PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check upstream and open PR if newer
+        env:
+          # Note: PRs created with the default github.token do not trigger
+          # the CI workflow; if MY_GITHUB_TOKEN (org bot PAT, also used by
+          # autobug) is available it is used instead so CI runs on the PR.
+          GH_TOKEN: ${{ secrets.MY_GITHUB_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          CURRENT=$(cat SSHNPD_VERSION)
+          LATEST=$(gh api repos/atsign-foundation/noports/releases/latest --jq .tag_name)
+          echo "current=$CURRENT latest=$LATEST"
+          if [ "$CURRENT" = "$LATEST" ]; then
+            echo "Already up to date"
+            exit 0
+          fi
+          BRANCH="bump-sshnpd-${LATEST}"
+          if gh pr list --head "$BRANCH" --state open --json number --jq length | grep -qv '^0$'; then
+            echo "Bump PR already open"
+            exit 0
+          fi
+          git config user.name 'Atsign Robot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$BRANCH"
+          echo "$LATEST" > SSHNPD_VERSION
+          git add SSHNPD_VERSION
+          git commit -m "build: bump sshnpd to ${LATEST}"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "build: bump sshnpd to ${LATEST}" \
+            --body "Automated bump: NoPorts released [${LATEST}](https://github.com/atsign-foundation/noports/releases/tag/${LATEST}) (was ${CURRENT}). CI builds the IOx image with the new binaries and runs the container smoke test."
