@@ -27,7 +27,7 @@ curl -fsSL -o "build/${TARBALL}" "$URL"
 tar -xzf "build/${TARBALL}" -C build
 # The tarball extracts to a directory (historically 'sshnp/') containing the
 # binaries; locate the ones we package wherever they landed.
-for BIN in sshnpd at_activate; do
+for BIN in sshnpd at_activate srv; do
     BIN_PATH=$(find build -type f -name "$BIN" -not -path "build/$BIN" | head -n1)
     if [ -z "$BIN_PATH" ]; then
         echo "$BIN binary not found in ${TARBALL}" >&2
