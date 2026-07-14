@@ -43,7 +43,7 @@ walkthrough from tarball to SSH session.
 Grab `noports-iosxe.tar` from the
 [releases page](https://github.com/atsign-foundation/noports-iosxe/releases),
 copy it to the switch, configure app-hosting from the CLI, onboard with a
-one-time passcode. You will need NoPorts atSigns for your devices; start at
+one-time passcode. You will need NoPorts Atsigns for your devices; start at
 [noports.com](https://noports.com).
 
 ### Contributors
@@ -155,7 +155,7 @@ configure the app, `install`/`activate`/`start`, and onboard.
 ### Onboard the device with APKAM (no atKeys files copied around)
 
 Enrollment cuts new, scope-limited APKAM keys **on the switch**; the full
-atKeys file for the device atSign never leaves the administrator's custody.
+atKeys file for the device Atsign never leaves the administrator's custody.
 
 On the admin machine (any host with an authorized key for `@mydevice`):
 
@@ -216,13 +216,13 @@ path is a separate outbound connection from the switch to the relay chosen
 by the client (`-r`), so a 443-only egress policy also needs a relay
 reachable on 443.
 
-## Fleet-scale access control: policy atSigns
+## Fleet-scale access control: policy Atsigns
 
-Listing manager atSigns per switch works for a handful of devices, but at
+Listing manager Atsigns per switch works for a handful of devices, but at
 fleet scale it means touching every device's app-hosting config to grant
-or revoke an operator's access. A **policy atSign** centralizes that
+or revoke an operator's access. A **policy Atsign** centralizes that
 decision: the daemon delegates each incoming request to a
-[NoPorts Policy Service](https://docs.noports.com) running as that atSign,
+[NoPorts Policy Service](https://docs.noports.com) running as that Atsign,
 which answers allow/deny based on centrally-managed rules.
 
 ```text
@@ -238,7 +238,7 @@ At least one of `MANAGER_ATSIGN` / `POLICY_ATSIGN` must be set:
   change. NoPorts' `permit-open` default also shifts from
   `localhost:22,localhost:3389` to `*:*`, deferring port restrictions to
   policy.
-- **both** — atSigns in `MANAGER_ATSIGN` get direct access (policy is not
+- **both** — Atsigns in `MANAGER_ATSIGN` get direct access (policy is not
   consulted for them); everyone else is checked against the policy
   service. Useful as a break-glass list alongside central control.
 
