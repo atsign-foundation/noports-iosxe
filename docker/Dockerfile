@@ -20,10 +20,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Pinned NoPorts release binaries, staged by scripts/fetch-sshnpd.sh
-COPY build/sshnpd build/at_activate /usr/local/bin/
+COPY build/sshnpd build/at_activate build/srv /usr/local/bin/
 COPY docker/entrypoint.sh docker/onboard-noports.sh /usr/local/bin/
 
-RUN chmod 0755 /usr/local/bin/sshnpd /usr/local/bin/at_activate \
+RUN chmod 0755 /usr/local/bin/sshnpd /usr/local/bin/at_activate /usr/local/bin/srv \
     /usr/local/bin/entrypoint.sh /usr/local/bin/onboard-noports.sh \
     && mkdir -p /data
 
