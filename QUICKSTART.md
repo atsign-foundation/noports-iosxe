@@ -4,9 +4,9 @@ Zero to an SSH session with no open ports, on a Catalyst 9000 switch.
 
 ## What you need first
 
-- Two atSigns: one for the switch (e.g. `@mydevice`) and one for you as the
+- Two Atsigns: one for the switch (e.g. `@mydevice`) and one for you as the
   manager (e.g. `@manager`) — get them at [noports.com](https://noports.com)
-- The manager atSign activated on your own machine, with the NoPorts client
+- The manager Atsign activated on your own machine, with the NoPorts client
   installed ([client install guide](https://docs.noports.com))
 - A Catalyst 9000 switch with:
   - **DNA Advantage** licensing
@@ -94,10 +94,10 @@ message) shows `awaiting-onboarding`.
 ## 4. Onboard the switch with APKAM
 
 Enrollment cuts new, scope-limited APKAM keys **on the switch**; the full
-atKeys file for the device atSign never leaves your custody.
+atKeys file for the device Atsign never leaves your custody.
 
 ```bash
-# on your machine: generate a one-time passcode for the device atSign
+# on your machine: generate a one-time passcode for the device Atsign
 at_activate otp -a @mydevice
 ```
 
@@ -144,7 +144,7 @@ gnmic -a localhost:57400 -u admin --skip-verify capabilities
 | `awaiting-onboarding` forever after enrollment | Confirm the keys landed on the persistent volume: in the session shell, `ls /data/keys/`. If empty, re-run `onboard-noports.sh`. If the volume mount is missing (`run-opts 1 "-v $(APP_DATA):/data"`), keys were written to the container layer and are lost on restart. |
 | Onboard script hangs then fails | Enrollment wasn't approved in time — check from your machine with `at_activate list -a @mydevice -s pending`, approve, re-run. If it never reaches the atServer, test egress from the session shell (e.g. `sshnpd --help` works but the network doesn't): check gateway/DNS config, then use proxy mode. |
 | No DNS in the container | `name-server0` missing from the app-hosting config, or the DNS server isn't reachable from the management subnet. |
-| Daemon runs but `sshnp`/`npt` can't connect | Client must use the same device name (`-d cat9k-1`), the manager atSign must be in `MANAGER_ATSIGN`, the target `-r <ip> -p <port>` must be listed in `PERMIT_OPEN`, and (behind strict ACLs) the relay chosen with `-r` (client-side flag) must be reachable outbound from the switch. |
+| Daemon runs but `sshnp`/`npt` can't connect | Client must use the same device name (`-d cat9k-1`), the manager Atsign must be in `MANAGER_ATSIGN`, the target `-r <ip> -p <port>` must be listed in `PERMIT_OPEN`, and (behind strict ACLs) the relay chosen with `-r` (client-side flag) must be reachable outbound from the switch. |
 | Keys gone after `app-hosting uninstall` | Expected: uninstall removes the app's persistent data. Revoke the old enrollment (`at_activate revoke`) and onboard again after reinstalling. |
 | Re-enrolling a device | Delete the key file under `/data/keys/`, revoke the old enrollment (`at_activate revoke`), and run the onboard script again. |
 

@@ -12,9 +12,9 @@
 #
 # Required:  DEVICE_ATSIGN  DEVICE_NAME
 #            plus at least one of MANAGER_ATSIGN / POLICY_ATSIGN
-# Optional:  POLICY_ATSIGN  (atSign of a NoPorts Policy Service that decides
+# Optional:  POLICY_ATSIGN  (Atsign of a NoPorts Policy Service that decides
 #                            access requests centrally — the right choice
-#                            for large fleets; if both are set, atSigns in
+#                            for large fleets; if both are set, Atsigns in
 #                            MANAGER_ATSIGN bypass the policy check)
 #            DEVICE_GROUP   (device group name, sent to the policy service
 #                            with each request so rules can target groups,
